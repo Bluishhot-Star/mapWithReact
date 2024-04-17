@@ -37,7 +37,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-
+  z-index: 10;
   /* background: #aaa; */
 }
 
@@ -118,6 +118,7 @@
   display: flex;
   align-items: center;
   padding: 5px 10px;
+  background: #fff;
 }
 .nav-button-text p{
   margin: 0;
@@ -140,6 +141,7 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  background: #fff;
 }
 .nav-button-profile:active{
   box-shadow: #c1c1c1 0px 1px 4px;
@@ -163,4 +165,8 @@
 }
 .nav-right-container>.nav-button-text{
   margin-left: 10px;
+}
+
+.map{
+  z-index: 0;
 }

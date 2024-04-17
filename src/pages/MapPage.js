@@ -4,6 +4,10 @@ import axios from 'axios';
 import { IoPersonCircle } from "react-icons/io5";
 import { GiTwinShell } from "react-icons/gi";
 import { MdOutlineMenu, MdSearch, MdOutlineFlood, MdOutlineWbSunny, MdSevereCold } from "react-icons/md";
+import { Container as MapDiv, NaverMap, Marker, useNavermaps } from 'react-naver-maps'
+
+import MyMap from '../components/Map';
+
 const MapPage = ()=>{
   return(
     <>
@@ -41,10 +45,19 @@ const MapPage = ()=>{
               <IoPersonCircle/>
             </div>
           </div>
-          
         </div>
+        <MapDiv className='map'
+          style={{
+            width: '100vw',
+            height: '100vh',
+          }}
+        >
+          <MyMap />
+        </MapDiv>
       </div>
     </>
   );
+  
 }
+
 export default MapPage;
