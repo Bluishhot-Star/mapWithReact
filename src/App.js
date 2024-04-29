@@ -9,11 +9,11 @@ function App() {
     <NavermapsProvider 
       ncpClientId={process.env.REACT_APP_MAP_CLIENT_ID}
     >
-    <div className="App">
-      <Routes>
-        <Route path="/" element={ <MapPage/> } />
-      </Routes>
-    </div>
+      <div className="App">
+        <Routes>
+          <Route path="/" element={ <MapPage/> } />
+        </Routes>
+      </div>
     </NavermapsProvider>
   );
 }
