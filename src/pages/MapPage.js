@@ -4,7 +4,7 @@ import axios from 'axios';
 import "../styles/Map.css"
 import { IoPersonCircle } from "react-icons/io5";
 import { GiTwinShell } from "react-icons/gi";
-import { MdOutlineMenu, MdSearch, MdOutlineFlood, MdOutlineWbSunny, MdSevereCold, MdGpsFixed, MdFindReplace } from "react-icons/md";
+import { MdOutlineMenu, MdSearch, MdOutlineFlood, MdOutlineWbSunny, MdSevereCold, MdGpsFixed, MdFindReplace, MdOutlineClose } from "react-icons/md";
 import { Container as MapDiv, NaverMap, Marker, useNavermaps, GroundOverlay, InfoWindow } from 'react-naver-maps'
 
 import CitySelector from '../components/CitySelector';
@@ -18,9 +18,10 @@ const MapPage = ()=>{
   let point = useSelector((state) => state.point );
   let dispatch = useDispatch();
   // 네이버 지도 객체
-  const navermaps = useNavermaps()
+  const navermaps = useNavermaps();
   // 지도 ref
   const [map, setMap] = useState(null);
+  const [infowindow, setInfoWindow] = useState(null);
   // 서울 전지역 디스플레이 좌표
   const seoul = new navermaps.LatLngBounds(
     new navermaps.LatLng(37.42829747263545, 126.76620435615891),
@@ -42,12 +43,14 @@ const MapPage = ()=>{
 
   // marker 리스트
   const createMarkerList = [];
+  const infoWindowList = [];
 
   const createMarker= (id, name, latitude, longitude, type)=>{
     let newMarker = new navermaps.Marker({
       position: new navermaps.LatLng(latitude, longitude),
       map,
       title: name,
+      type: type,
       clickable: true,
       icon: {
          //html element를 반환하는 CustomMapMarker 컴포넌트 할당
@@ -60,28 +63,56 @@ const MapPage = ()=>{
     });
     // marker 리스트에 삽입
     createMarkerList.push(newMarker);
+    console.log(createMarkerList);
     // marker click 이벤트 핸들러 등록
     navermaps.Event.addListener(newMarker, 'click', (e) =>
       markerClickHandler(e,id)
     );
+
+    let infoWindow = new navermaps.InfoWindow({
+      content: [
+        '<div style="padding: 10px; box-shadow: rgba(0, 0, 0, 0.1) 0px 4px 16px 0px;">',
+        `   <div style="font-weight: bold; margin-bottom: 5px;">${name}</div>`,
+        `   <div style="font-size: 13px;">${type}<div>`,
+        "</div>",
+      ].join(""),
+      maxWidth: 300,
+      anchorSize: {
+        width: 12,
+        height: 14,
+      },
+      borderColor: "#cecdc7",
+    });
+    infoWindowList.push(infoWindow);
   }
 
   // 마커 클릭 이벤트 핸들러
   const markerClickHandler= (e,id)=>{
     console.log(e,id);
-    console.log(e.coord.lat())
+    map.panTo(new navermaps.LatLng(e.overlay.position.y, e.overlay.position.x));
+    setDetailOnOff("on");
+    infoWindowList[id].open(map, createMarkerList[id]);
+    setInfoWindow(infoWindowList[id]);
   }
+  // detail OnOff css
+  const [detailOnOff, setDetailOnOff] = useState("off");
+  
+  // Grid OnOff css 변화
+  const [gridOnOff, setGridOnOff] = useState("off");
+
+
 
   // 마커 생성
   // TODO : 현재 지역 검색 버튼 누르면 데이터 필터링 후 반환된 데이터들에 대해서 생성하도록 변경
   useEffect(()=>{
     if(map){
-      createMarker(1, "여기", 37.5435257, 127.1254351, "flood");
-      createMarker(2, "여기", 37.470601, 127.041188, "hot");
-      createMarker(3, "여기", 37.4887323, 126.9792598, "cold");
+      createMarker(0, "천호2동주민센터", 37.5435257, 127.1254351, "flood");
+      createMarker(1, "양재2동주민센터", 37.470601, 127.041188, "hot");
+      createMarker(2, "사당2동주민센터", 37.4887323, 126.9792598, "cold");
     }
   },[map])
 
+  
 
   // 리셋버튼 디스플레이
   const [resetBtnOnOff, setResetBtnOnOff] = useState(false);
@@ -115,7 +146,17 @@ const MapPage = ()=>{
 
   return(
     <>
+      
+
       <div className='map-page-container'>
+        <div className={"detail-container "+detailOnOff}>
+          <div className="detail-close-button-container" onClick={()=>{if(detailOnOff==="on"){setDetailOnOff("off")}}}>
+            <MdOutlineClose/>
+          </div>
+          <div className="detail-header">
+            
+          </div>
+        </div>
         <div className="nav-container">
           <div className="nav-left-container">
 
@@ -167,11 +208,13 @@ const MapPage = ()=>{
             <MdGpsFixed/>
           </div>
         </div>
-        
         <MapDiv className='map'>
           <NaverMap
             ref={setMap}
-            onClick={()=>{if(selectorOnOff){setSelectorOnOff(false)}}}
+            onClick={()=>{
+              if(selectorOnOff){setSelectorOnOff(false)}
+              if(infowindow){infowindow.close()}
+            }}
             defaultCenter={new navermaps.LatLng(37.5648117, 126.9750053)}
             defaultZoom={11}
             disableKineticPan={false}
