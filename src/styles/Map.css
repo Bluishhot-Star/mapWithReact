@@ -109,6 +109,23 @@
 .nav-button-text:active{
   box-shadow: #c1c1c1 0px 1px 4px;
 }
+.nav-button-text:nth-child(1).on{
+  box-shadow: var(--flood) 5px 5px 7px;
+  height: 36px;
+  border: 3px solid var(--flood);
+}
+.nav-button-text:nth-child(2).on{
+  box-shadow: var(--swelter) 5px 5px 7px;
+  height: 36px;
+  border: 3px solid var(--swelter);
+}
+.nav-button-text:nth-child(3).on{
+  box-shadow: var(--severeCold) 5px 5px 7px;
+  height: 36px;
+  border: 3px solid var(--severeCold);
+}
+
+
 .nav-button-profile{
   box-shadow: #969696 0px 2px 3px, #a5a5a5 0px -0.5px 2px;
   border-radius: 50vh;
@@ -274,3 +291,4 @@
   height: 60px;
   background: var(--color1);
 }
+

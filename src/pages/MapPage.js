@@ -14,14 +14,16 @@ import {setGu, setDong, setXY} from '../store.js'
 
 const MapPage = ()=>{
   // redux/ selector 선택 후 지도 이동을 위한 좌표 객체
-  // TODO 해당 객체를 지도 중앙 좌표로 변경
   let point = useSelector((state) => state.point );
   let dispatch = useDispatch();
+
   // 네이버 지도 객체
   const navermaps = useNavermaps();
+
   // 지도 ref
   const [map, setMap] = useState(null);
   const [infowindow, setInfoWindow] = useState(null);
+
   // 서울 전지역 디스플레이 좌표
   const seoul = new navermaps.LatLngBounds(
     new navermaps.LatLng(37.42829747263545, 126.76620435615891),
@@ -31,7 +33,12 @@ const MapPage = ()=>{
   // selector OnOff 상태 state
   const [selectorOnOff, setSelectorOnOff] = useState(false);
   
-  // 지역 selector 선택 시 해당 좌표로 이동 ->
+  // right buttons on/off
+  const [floodButtonOn, setFloodButtonOn] = useState(false);
+  const [hotButtonOn, setHotButtonOn] = useState(false);
+  const [coldButtonOn, setColdButtonOn] = useState(false);
+
+  // 지역 selector 선택 시 해당 좌표로 이동 -> point.latitude, point.longitude 변화
   //! 현재 point는 지도의 중앙 위치 좌표를 담음.
   useEffect(()=>{
     if(map){
@@ -43,8 +50,11 @@ const MapPage = ()=>{
 
   // marker 리스트
   const createMarkerList = [];
+  // infoWindow 리스트
   const infoWindowList = [];
 
+  // marker 생성
+  // TODO : 데이터를 API로 부터 받아와서 생성하기
   const createMarker= (id, name, latitude, longitude, type)=>{
     let newMarker = new navermaps.Marker({
       position: new navermaps.LatLng(latitude, longitude),
@@ -97,18 +107,13 @@ const MapPage = ()=>{
   // detail OnOff css
   const [detailOnOff, setDetailOnOff] = useState("off");
   
-  // Grid OnOff css 변화
-  const [gridOnOff, setGridOnOff] = useState("off");
-
-
 
   // 마커 생성
-  // TODO : 현재 지역 검색 버튼 누르면 데이터 필터링 후 반환된 데이터들에 대해서 생성하도록 변경
+  // TODO : 현재 지역 검색 버튼 누르면 데이터 필터링 후 반환된 데이터들에 대해서 생성하도록 변경/데이터 수만큼 createMarker() 호출
   useEffect(()=>{
     if(map){
       createMarker(0, "천호2동주민센터", 37.5435257, 127.1254351, "flood");
       createMarker(1, "양재2동주민센터", 37.470601, 127.041188, "hot");
-      createMarker(2, "사당2동주민센터", 37.4887323, 126.9792598, "cold");
     }
   },[map])
 
@@ -122,6 +127,7 @@ const MapPage = ()=>{
   const changeCenter = (e)=>{
     setResetBtnOnOff(true);
     if(map){
+      // 좌표 -> 주소 변환
       navermaps.Service.reverseGeocode({
         coords: new navermaps.LatLng(e.y, e.x),
       }, function(status, response) {
@@ -134,6 +140,7 @@ const MapPage = ()=>{
           console.log(e.y, e.x);
           console.log(address.jibunAddress.trim().split(' '));
           let result = address.jibunAddress.trim().split(' '); // 지도 중앙의 주소 배열 (시 / 구 / 동)
+          // point.Gu, point.Dong 변화
           dispatch(setGu(result[1]))
           dispatch(setDong(""));
           dispatch(setDong(result[2]));
@@ -161,7 +168,8 @@ const MapPage = ()=>{
           <div className="nav-left-container">
 
             <div className="nav-button" onClick={()=>{
-              console.log(point);
+              // console.log(point);
+              // createMarker(2, "사당2동주민센터", 37.4887323, 126.9792598, "cold");
             }}>
               <div className="nav-logo-container">
                 <MdOutlineMenu className='menu-icon'/>
@@ -177,15 +185,15 @@ const MapPage = ()=>{
           </div>
           <CitySelector onOff={selectorOnOff} setOnOff={setSelectorOnOff}/>
           <div className="nav-right-container">
-            <div className="nav-button-text">
+            <div className={floodButtonOn?"on nav-button-text " :"nav-button-text"} onClick={()=>{setFloodButtonOn(!floodButtonOn)}}>
               <MdOutlineFlood className='flood-icon'/>
               <p>수해 대피소</p>
             </div>
-            <div className="nav-button-text">
+            <div className={hotButtonOn?"on nav-button-text " :"nav-button-text"} onClick={()=>{setHotButtonOn(!hotButtonOn)}}>
               <MdOutlineWbSunny className='swelter-icon'/>
               <p>무더위 쉼터</p>
             </div>
-            <div className="nav-button-text">
+            <div className={coldButtonOn?"on nav-button-text " :"nav-button-text"} onClick={()=>{setColdButtonOn(!coldButtonOn)}}>
               <MdSevereCold className='severeCold-icon'/>
               <p>한파 쉼터</p>
             </div>
