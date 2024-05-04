@@ -5,8 +5,8 @@ import "../styles/Map.css"
 import { IoPersonCircle } from "react-icons/io5";
 import { GiTwinShell } from "react-icons/gi";
 import { MdOutlineMenu, MdSearch, MdOutlineFlood, MdOutlineWbSunny, MdSevereCold, MdGpsFixed, MdFindReplace, MdOutlineClose } from "react-icons/md";
+import { RiEarthquakeLine } from "react-icons/ri";
 import { Container as MapDiv, NaverMap, Marker, useNavermaps, GroundOverlay, InfoWindow } from 'react-naver-maps'
-
 import CitySelector from '../components/CitySelector';
 import MarkerShape from '../components/MarkerShape';
 import { useSelector, useDispatch } from "react-redux"
@@ -35,6 +35,7 @@ const MapPage = ()=>{
   
   // right buttons on/off
   const [floodButtonOn, setFloodButtonOn] = useState(false);
+  const [earthQuakeButtonOn, setEarthQuakeButtonOn] = useState(false);
   const [hotButtonOn, setHotButtonOn] = useState(false);
   const [coldButtonOn, setColdButtonOn] = useState(false);
 
@@ -50,7 +51,15 @@ const MapPage = ()=>{
 
   // marker 리스트
   const createMarkerList = [];
+  const createFloodMarkerList = [];
+  const createSwelterMarkerList = [];
+  const createColdMarkerList = [];
+  const createEarthQuakeMarkerList = [];
   // infoWindow 리스트
+  const floodInfoWindowList = [];
+  const swelterInfoWindowList = [];
+  const coldInfoWindowList = [];
+  const earthQuakeInfoWindowList = [];
   const infoWindowList = [];
 
   // marker 생성
@@ -164,6 +173,42 @@ const MapPage = ()=>{
             
           </div>
         </div>
+        {
+              resetBtnOnOff ?
+              <div className='reset-button-container'>
+                <div className="reset-button" 
+                onClick={()=>{setResetBtnOnOff(false)}}>
+                  <p>이 지역의</p>
+                  {
+                    !floodButtonOn&&!earthQuakeButtonOn&&!hotButtonOn&&!coldButtonOn ?
+                    <>
+                      <MdOutlineFlood className='flood-icon'/>
+                      <RiEarthquakeLine className='earthquake-icon'/>
+                      <MdOutlineWbSunny className='swelter-icon'/>
+                      <MdSevereCold className='severeCold-icon'/>
+                    </>
+                    :
+                    <>
+                      {
+                        floodButtonOn?<MdOutlineFlood className='flood-icon'/>:null
+                      }
+                      {
+                        earthQuakeButtonOn?<RiEarthquakeLine className='earthquake-icon'/>:null
+                      }
+                      {
+                        hotButtonOn?<MdOutlineWbSunny className='swelter-icon'/>:null
+                      }
+                      {
+                        coldButtonOn?<MdSevereCold className='severeCold-icon'/>:null
+                      }
+                    </>
+                  }
+                  <p>검색하기</p>
+                  {/* <MdFindReplace className='find-marker-icon'/> */}
+                </div>
+              </div>
+              :<div></div>
+            }
         <div className="nav-container">
           <div className="nav-left-container">
 
@@ -188,6 +233,10 @@ const MapPage = ()=>{
             <div className={floodButtonOn?"on nav-button-text " :"nav-button-text"} onClick={()=>{setFloodButtonOn(!floodButtonOn)}}>
               <MdOutlineFlood className='flood-icon'/>
               <p>수해 대피소</p>
+            </div>
+            <div className={earthQuakeButtonOn?"on nav-button-text " :"nav-button-text"} onClick={()=>{setEarthQuakeButtonOn(!earthQuakeButtonOn)}}>
+              <RiEarthquakeLine className='earthquake-icon'/>
+              <p>지진 대피소</p>
             </div>
             <div className={hotButtonOn?"on nav-button-text " :"nav-button-text"} onClick={()=>{setHotButtonOn(!hotButtonOn)}}>
               <MdOutlineWbSunny className='swelter-icon'/>
@@ -238,17 +287,6 @@ const MapPage = ()=>{
           >
           </NaverMap>
         </MapDiv>
-        {
-          resetBtnOnOff ?
-          <div className='reset-button-container'>
-            <div className="reset-button" 
-            onClick={()=>{setResetBtnOnOff(false)}}>
-              <MdFindReplace/>
-              <p>이 지역 검색하기</p>
-            </div>
-          </div>
-          :null
-        }
 
       </div>
     </>
