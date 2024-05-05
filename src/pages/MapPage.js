@@ -49,52 +49,99 @@ const MapPage = ()=>{
     }
   },[point.latitude, point.longitude]);
 
+  // 데이터 받아오기
+  const getData = async()=>{
+    let center = map.getCenter();
+    let lat = center.x;
+    let lon = center.y;
+    await axios.get(`/open-api/shelter/search/coordinate?lat=${lat}&lon=${lon}&ditc=FLOOD`,{
+    }).then((res)=>{
+      console.log(res);
+      if(res.status == 200){
+        
+        enrollMarkers(res.data.body);
+        
+        return res;
+      }
+    })
+    // .then((res)=>{
+    //     // console.log(createMarkerList);
+    //     map.refresh();
+    // })
+  }
+  const deleteAllMarker = ()=>{
+    console.log(markerList);
+    markerList.forEach((el)=>{
+      el.setMap(null);
+    });
+    setMarkerList([]);
+  }
+
+
+
   // marker 리스트
-  const createMarkerList = [];
-  const createFloodMarkerList = [];
-  const createSwelterMarkerList = [];
-  const createColdMarkerList = [];
-  const createEarthQuakeMarkerList = [];
+  const [markerList, setMarkerList] = useState([]);
   // infoWindow 리스트
-  const floodInfoWindowList = [];
-  const swelterInfoWindowList = [];
-  const coldInfoWindowList = [];
-  const earthQuakeInfoWindowList = [];
-  const infoWindowList = [];
+  const [infoWindowList, setInfoWindowList] = useState([]);
+
+  // 마커등록 함수
+  const enrollMarkers = async (data)=>{
+    console.log(data);
+    // 임시 마커 리스트
+    let tMarkers = [];
+    // 임시 정보창 리스트
+    let tInfos = [];
+    // 비동기로 마커, 정보창 생성 및 클릭이벤트리스너 등록
+    for await (const it of data) {
+      console.log(it);
+      // 마커 생성
+      let marker = createMarker(it.id, it.name, it.lon, it.lat, it.ditc, it.dtl_adres);
+      // 정보창 생성
+      let infoWindow = createInfoWindow(it.id, it.name,it.ditc);
+      // 이벤트 등록
+      navermaps.Event.addListener(marker, 'click', (e) =>{
+        markerClickHandler(e,it.id,[...tMarkers,marker],[...tInfos,infoWindow]);
+      });
+      // 임시 리스트에 각 항목 추가
+      tMarkers.push(marker);
+      tInfos.push(infoWindow);
+    }
+    // state 저장
+    setMarkerList([...tMarkers]);
+    setInfoWindowList([...tInfos]);
+  }
 
   // marker 생성
-  // TODO : 데이터를 API로 부터 받아와서 생성하기
-  const createMarker= (id, name, latitude, longitude, type)=>{
+  const createMarker= (id, name, longitude, latitude, type, address)=>{
     let newMarker = new navermaps.Marker({
-      position: new navermaps.LatLng(latitude, longitude),
-      map,
+      position: new navermaps.LatLng(longitude, latitude),
+      id: id,
+      map: map,
       title: name,
-      type: type,
+      type: type.toLowerCase(),
+      address : address,
       clickable: true,
       icon: {
          //html element를 반환하는 CustomMapMarker 컴포넌트 할당
-        content: MarkerShape(type),
+        content: MarkerShape(type.toLowerCase()),
          //마커의 크기 지정
         size: new navermaps.Size(28, 28),
          //마커의 기준위치 지정
         anchor: new navermaps.Point(19, 58),
         },
     });
-    // marker 리스트에 삽입
-    createMarkerList.push(newMarker);
-    console.log(createMarkerList);
-    // marker click 이벤트 핸들러 등록
-    navermaps.Event.addListener(newMarker, 'click', (e) =>
-      markerClickHandler(e,id)
-    );
-
+    return newMarker;
+  }
+  // infoWindow 생성
+  const createInfoWindow = (id, name, type)=>{
     let infoWindow = new navermaps.InfoWindow({
       content: [
         '<div style="padding: 10px; box-shadow: rgba(0, 0, 0, 0.1) 0px 4px 16px 0px;">',
         `   <div style="font-weight: bold; margin-bottom: 5px;">${name}</div>`,
-        `   <div style="font-size: 13px;">${type}<div>`,
+        `   <div style="font-size: 13px;">${type=="FLOOD"?"수해 대피소":type=="EARTHQUAKE"?"지진 대피소":type=="HOT"?"무더위 쉼터":type=="COLD"?"한파 쉼터":"-"}<div>`,
         "</div>",
       ].join(""),
+      id: id,
       maxWidth: 300,
       anchorSize: {
         width: 12,
@@ -102,16 +149,18 @@ const MapPage = ()=>{
       },
       borderColor: "#cecdc7",
     });
-    infoWindowList.push(infoWindow);
+    return infoWindow;
   }
 
   // 마커 클릭 이벤트 핸들러
-  const markerClickHandler= (e,id)=>{
+  const markerClickHandler= (e, id, markerList, infoWindowList)=>{
+    console.log(markerList);
     console.log(e,id);
     map.panTo(new navermaps.LatLng(e.overlay.position.y, e.overlay.position.x));
     setDetailOnOff("on");
-    infoWindowList[id].open(map, createMarkerList[id]);
-    setInfoWindow(infoWindowList[id]);
+    let infoWindowTarget = infoWindowList.filter(it=>it.id == id)[0];
+    infoWindowTarget.open(map, markerList.filter(it=>it.id == id)[0]);
+    setInfoWindow(infoWindowTarget);
   }
   // detail OnOff css
   const [detailOnOff, setDetailOnOff] = useState("off");
@@ -121,8 +170,9 @@ const MapPage = ()=>{
   // TODO : 현재 지역 검색 버튼 누르면 데이터 필터링 후 반환된 데이터들에 대해서 생성하도록 변경/데이터 수만큼 createMarker() 호출
   useEffect(()=>{
     if(map){
-      createMarker(0, "천호2동주민센터", 37.5435257, 127.1254351, "flood");
-      createMarker(1, "양재2동주민센터", 37.470601, 127.041188, "hot");
+      // createMarker(0, "천호2동주민센터", 37.5435257, 127.1254351, "flood");
+      // createMarker(1, "양재2동주민센터", 37.470601, 127.041188, "hot");
+      console.log(map);
     }
   },[map])
 
@@ -177,7 +227,12 @@ const MapPage = ()=>{
               resetBtnOnOff ?
               <div className='reset-button-container'>
                 <div className="reset-button" 
-                onClick={()=>{setResetBtnOnOff(false)}}>
+                onClick={()=>{
+                  setResetBtnOnOff(false);
+                  deleteAllMarker();
+                  getData();
+                }
+                  }>
                   <p>이 지역의</p>
                   {
                     !floodButtonOn&&!earthQuakeButtonOn&&!hotButtonOn&&!coldButtonOn ?
@@ -215,6 +270,8 @@ const MapPage = ()=>{
             <div className="nav-button" onClick={()=>{
               // console.log(point);
               // createMarker(2, "사당2동주민센터", 37.4887323, 126.9792598, "cold");
+              console.log(markerList);
+              console.log(infoWindowList);
             }}>
               <div className="nav-logo-container">
                 <MdOutlineMenu className='menu-icon'/>
