@@ -182,7 +182,6 @@ const MapPage = ()=>{
           let infoWindowTarget = infoWindowList.filter(it=>it.id == props.id)[0];
           infoWindowTarget.open(map, markerList.filter(it=>it.id == props.id)[0]);
           setInfoWindow(infoWindowTarget);
-          scrollRef.current[props.idx].scrollIntoView({ behavior: "smooth" });
         }}>
           <div className={"detail-content-header "+props.type.toLowerCase()}>
             <p className='detail-content-name'>{props.name}</p>
