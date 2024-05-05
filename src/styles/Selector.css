@@ -4,7 +4,7 @@
   box-shadow: #969696 0px 2px 3px, #a5a5a5 0px -0.5px 2px;
   border-radius: 5px;
   overflow: scroll;
-
+  scrollbar-width: none;
   position: absolute;
   bottom: -150px;
   left: 50%;

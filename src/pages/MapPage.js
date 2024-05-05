@@ -2,9 +2,10 @@ import { useState, useRef, useEffect} from 'react';
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios';
 import "../styles/Map.css"
+import "../styles/Detail.css"
 import { IoPersonCircle } from "react-icons/io5";
 import { GiTwinShell } from "react-icons/gi";
-import { MdOutlineMenu, MdSearch, MdOutlineFlood, MdOutlineWbSunny, MdSevereCold, MdGpsFixed, MdFindReplace, MdOutlineClose } from "react-icons/md";
+import { MdOutlineMenu, MdSearch, MdOutlineFlood, MdOutlineWbSunny, MdSevereCold, MdGpsFixed, MdFindReplace, MdOutlineClose, MdArrowRight, MdArrowLeft } from "react-icons/md";
 import { RiEarthquakeLine } from "react-icons/ri";
 import { Container as MapDiv, NaverMap, Marker, useNavermaps, GroundOverlay, InfoWindow } from 'react-naver-maps'
 import CitySelector from '../components/CitySelector';
@@ -40,7 +41,6 @@ const MapPage = ()=>{
   const [coldButtonOn, setColdButtonOn] = useState(false);
 
   // 지역 selector 선택 시 해당 좌표로 이동 -> point.latitude, point.longitude 변화
-  //! 현재 point는 지도의 중앙 위치 좌표를 담음.
   useEffect(()=>{
     if(map){
       // map.setZoom(15, false)
@@ -54,20 +54,13 @@ const MapPage = ()=>{
     let center = map.getCenter();
     let lat = center.x;
     let lon = center.y;
-    await axios.get(`/open-api/shelter/search/coordinate?lat=${lat}&lon=${lon}&ditc=FLOOD`,{
+    await axios.get(`/open-api/shelter/search/coordinate?lat=${lat}&lon=${lon}&ditc=ALL`,{
     }).then((res)=>{
       console.log(res);
       if(res.status == 200){
-        
         enrollMarkers(res.data.body);
-        
-        return res;
       }
     })
-    // .then((res)=>{
-    //     // console.log(createMarkerList);
-    //     map.refresh();
-    // })
   }
   const deleteAllMarker = ()=>{
     console.log(markerList);
@@ -100,7 +93,7 @@ const MapPage = ()=>{
       let infoWindow = createInfoWindow(it.id, it.name,it.ditc);
       // 이벤트 등록
       navermaps.Event.addListener(marker, 'click', (e) =>{
-        markerClickHandler(e,it.id,[...tMarkers,marker],[...tInfos,infoWindow]);
+        markerClickHandler(e, it.id, [...tMarkers,marker], [...tInfos,infoWindow]);
       });
       // 임시 리스트에 각 항목 추가
       tMarkers.push(marker);
@@ -154,17 +147,78 @@ const MapPage = ()=>{
 
   // 마커 클릭 이벤트 핸들러
   const markerClickHandler= (e, id, markerList, infoWindowList)=>{
-    console.log(markerList);
-    console.log(e,id);
     map.panTo(new navermaps.LatLng(e.overlay.position.y, e.overlay.position.x));
+    
     setDetailOnOff("on");
+    setDetailData({"name":e.overlay.title, "type":e.overlay.type, "address":e.overlay.address});
+    
     let infoWindowTarget = infoWindowList.filter(it=>it.id == id)[0];
     infoWindowTarget.open(map, markerList.filter(it=>it.id == id)[0]);
+    let idx = infoWindowList.indexOf(infoWindowTarget);
     setInfoWindow(infoWindowTarget);
+    setDetailClickIdx(idx);
+    scrollRef.current[idx].scrollIntoView({ behavior: "smooth" });
   }
   // detail OnOff css
   const [detailOnOff, setDetailOnOff] = useState("off");
+
+  // detail data
+  const [detailData, setDetailData] = useState(null);
   
+  // detail click idx
+  const [detailClickIdx, setDetailClickIdx] = useState(null);
+  const scrollRef = useRef([]);
+  const handleScrollView = (event, idx) => {
+    scrollRef.current[idx].scrollIntoView({ behavior: "smooth" });
+  };
+  const DetailContent = (props)=>{
+    return(
+      <>
+        <div className={props.idx==detailClickIdx?"detail-content-container clicked":"detail-content-container" } onClick={async()=>{
+          setDetailClickIdx(props.idx);
+          map.panTo(new navermaps.LatLng(props.lon, props.lat));
+          console.log(infoWindowList);
+          console.log(props.id);
+          let infoWindowTarget = infoWindowList.filter(it=>it.id == props.id)[0];
+          infoWindowTarget.open(map, markerList.filter(it=>it.id == props.id)[0]);
+          setInfoWindow(infoWindowTarget);
+          scrollRef.current[props.idx].scrollIntoView({ behavior: "smooth" });
+        }}>
+          <div className={"detail-content-header "+props.type.toLowerCase()}>
+            <p className='detail-content-name'>{props.name}</p>
+            <div className={'detail-content-type '+props.type.toLowerCase()}>
+              {
+                props.type=="FLOOD"?
+                  <>
+                    <MdOutlineFlood className='flood-icon'/>
+                    <p>수해 대피소</p>
+                  </>
+                :props.type=="EARTHQUAKE"?
+                  <>
+                    <RiEarthquakeLine className='earthquake-icon'/>
+                    <p>지진 대피소</p>
+                  </>
+                :props.type=="HOT"?
+                  <>
+                    <MdOutlineWbSunny className='swelter-icon'/>
+                    <p>무더위 쉼터</p>
+                  </>
+                :props.type=="COLD"?
+                  <>
+                    <MdSevereCold className='severeCold-icon'/>:"-"
+                    <p>한파 쉼터</p>
+                  </>
+                : <><p>-</p></>
+              }
+            </div>
+          </div>
+          <div className={'detail-content '}>
+            {props.address}
+          </div>
+        </div>
+      </>
+    );
+  }
 
   // 마커 생성
   // TODO : 현재 지역 검색 버튼 누르면 데이터 필터링 후 반환된 데이터들에 대해서 생성하도록 변경/데이터 수만큼 createMarker() 호출
@@ -193,7 +247,6 @@ const MapPage = ()=>{
           if (status !== navermaps.Service.Status.OK) {
               return alert('Something wrong!');
           }
-  
           let res = response.v2, // 검색 결과의 컨테이너
               address = res.address; // 검색 결과로 만든 주소
           console.log(e.y, e.x);
@@ -215,12 +268,32 @@ const MapPage = ()=>{
       
 
       <div className='map-page-container'>
+        {
+          detailOnOff ?
+          <div className="detail-open-button-container" onClick={()=>{if(detailOnOff==="off"){setDetailOnOff("on")}}}>
+            <MdArrowRight/>
+          </div>
+          :null
+        }
         <div className={"detail-container "+detailOnOff}>
           <div className="detail-close-button-container" onClick={()=>{if(detailOnOff==="on"){setDetailOnOff("off")}}}>
-            <MdOutlineClose/>
+            <MdArrowLeft/>
           </div>
           <div className="detail-header">
-            
+          </div>
+          <div className='detail-body'>
+          {
+            markerList.length !== 0 ?
+              markerList.map((el, idx)=>{
+                return (
+                  <div ref={(el) => (scrollRef.current[idx] = el)} >
+                    <DetailContent idx={idx} type={el.type.toUpperCase()} name={el.title} lon={el.position.y} lat={el.position.x} address={el.address} id={el.id}/>
+                  </div>
+              )
+              })
+            :
+              null
+          }
           </div>
         </div>
         {
@@ -231,6 +304,7 @@ const MapPage = ()=>{
                   setResetBtnOnOff(false);
                   deleteAllMarker();
                   getData();
+                  setDetailOnOff("on");
                 }
                   }>
                   <p>이 지역의</p>
@@ -270,8 +344,9 @@ const MapPage = ()=>{
             <div className="nav-button" onClick={()=>{
               // console.log(point);
               // createMarker(2, "사당2동주민센터", 37.4887323, 126.9792598, "cold");
-              console.log(markerList);
-              console.log(infoWindowList);
+              // console.log(markerList);
+              // console.log(infoWindowList);
+              // setDetailOnOff("on");
             }}>
               <div className="nav-logo-container">
                 <MdOutlineMenu className='menu-icon'/>
@@ -279,7 +354,7 @@ const MapPage = ()=>{
                 <p>천재지변</p>
               </div>
               <div className="nav-input-container">
-                <input type="text" />
+                <input type="text" placeholder='주소, 대피소, 쉼터를 검색하세요' onClick={(e)=>{e.stopPropagation();}}/>
                 <MdSearch className='search-icon'/>
               </div>
             </div>
