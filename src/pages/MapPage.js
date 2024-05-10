@@ -417,6 +417,25 @@ const MapPage = ()=>{
             <MdArrowLeft/>
           </div>
           <div className="detail-header">
+            <GiTwinShell className='logo-icon'/>
+            <p>천재지변</p>
+            <div className='detail-header-images'>
+              <div>
+                <MdOutlineFlood className='flood-icon'/>
+              </div>
+              <div>
+                <RiEarthquakeLine className='earthquake-icon'/>
+              </div>
+              <div>
+                <MdHouseSiding className='temporary-icon'/>
+              </div>
+              <div>
+                <MdOutlineWbSunny className='swelter-icon'/>
+              </div>
+              <div>
+                <MdSevereCold className='severeCold-icon'/>
+              </div>
+            </div>
           </div>
           <WeatherAPI XY={centerXY} point={point}/>
           <div className='detail-body'>
