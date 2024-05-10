@@ -7,8 +7,8 @@ import { IoPersonCircle } from "react-icons/io5";
 import { GiTwinShell } from "react-icons/gi";
 import { MdOutlineMenu, MdSearch, MdOutlineFlood, MdOutlineWbSunny, MdSevereCold, MdGpsFixed, MdFindReplace, MdHouseSiding, MdArrowRight, MdArrowLeft } from "react-icons/md";
 import { RiEarthquakeLine } from "react-icons/ri";
-import { PiPhoneCallFill, PiPersonFill } from "react-icons/pi";
-import { PiMapPinFill } from "react-icons/pi";
+import { PiMapPinFill, PiPhoneCallFill, PiPersonFill } from "react-icons/pi";
+import { TbMapPinOff } from "react-icons/tb";
 import { Container as MapDiv, NaverMap, Marker, useNavermaps, GroundOverlay, InfoWindow } from 'react-naver-maps'
 import CitySelector from '../components/CitySelector';
 import MarkerShape from '../components/MarkerShape';
@@ -116,8 +116,8 @@ const MapPage = ()=>{
     setInfoWindowList([...tInfos]);
     console.log(tMarkers);
     if(tMarkers.length !== 0){
+      setDeleteButtonOn(true);
       map.panTo(new navermaps.LatLng(tMarkers[0].position.y, tMarkers[0].position.x));
-      map.setZoom(14);
     }
   }
 
@@ -396,6 +396,10 @@ const MapPage = ()=>{
       }, 300);
     }
   },[vibration])
+
+  const [deleteButtonOn, setDeleteButtonOn] = useState(false);
+
+
   return(
     <>
       
@@ -516,7 +520,16 @@ const MapPage = ()=>{
               <MdSevereCold className='severeCold-icon'/>
               <p>한파 쉼터</p>
             </div> */}
-            
+            {
+              deleteButtonOn ? 
+                <div className="nav-delete-marker-button-container">
+                  <div className='nav-delete-marker-button' onClick={()=>{setDeleteButtonOn(false); deleteAllMarker();}}>
+                    <TbMapPinOff/>
+                    <p>마커 삭제</p>
+                  </div>
+                </div>
+              :null
+            }
             <div className="nav-category-button-container shelter">
               <div className="nav-category-toggle-button" onClick={(e)=>{e.stopPropagation(); setShelterDrop(!shelterDrop); setTemporaryDrop(false); setHouseDrop(false); console.log("asdfsadf");}}>
                 대피소

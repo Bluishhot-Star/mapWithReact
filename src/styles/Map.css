@@ -150,7 +150,36 @@
   border: 3px solid var(--severeCold);
   margin-left: 4.5px;
 }
-
+.nav-delete-marker-button-container{
+  position: relative;
+  width: 100px;
+  height: 0px;
+}
+.nav-delete-marker-button{
+  position: absolute;
+  top: -15px;
+  left: 0;
+  width: 85px;
+  height: 40px;
+  background: rgb(184, 58, 58);
+  color: #efefef;
+  box-shadow: #969696 0px 2px 3px, #a5a5a5 0px -0.5px 2px;
+  border-radius: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+}
+.nav-delete-marker-button svg{
+  color: #5f0707;
+}
+.nav-delete-marker-button p{
+  margin: 0;padding: 0;
+  font-size: .85rem;
+  margin-left: 3px;
+  font-weight: bold;
+  user-select: none;
+}
 .nav-category-button-container{
   position: relative;
   /* background: #000; */
