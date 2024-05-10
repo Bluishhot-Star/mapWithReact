@@ -116,9 +116,9 @@ const MapPage = ()=>{
     setMarkerList([...tMarkers]);
     setInfoWindowList([...tInfos]);
     console.log(tMarkers);
-    if(tMarkers.length !== 0 && search){
+    if(tMarkers.length !== 0){
       setDeleteButtonOn(true);
-      map.panTo(new navermaps.LatLng(tMarkers[0].position.y, tMarkers[0].position.x));
+      if(search)map.panTo(new navermaps.LatLng(tMarkers[0].position.y, tMarkers[0].position.x));
     }
   }
 

@@ -43,7 +43,7 @@ const [url, setUrl] = useState(null);
 useEffect(() => {
     if (target && !isNaN(target.x) && !isNaN(target.y)) {
         // 오늘 날짜 데이터 받아오는 시간
-        const baseDate = date.getFullYear()+(date.getUTCMonth()+1).toString().padStart(2,'0')+date.getDate().toString()
+        const baseDate = now.getFullYear()+(now.getUTCMonth()+1).toString().padStart(2,'0')+(now.getDate()-1).toString()
         const baseTime = "0200";
         const serviceKey =
             "xFeFi4zAr3VGnUFGSTeQudJv8FQK0MCN38s8vk4v3uJ6xHmFsELBZNnEZauD0SfNfZczCV0rNZKwrw%2BoFZ%2BW5A%3D%3D";
@@ -61,7 +61,8 @@ useEffect(() => {
 
 let date = new Date();
 console.log(date.getFullYear()+(date.getUTCMonth()+1).toString().padStart(2,'0')+date.getDate().toString())
-let now = new Date(); // 한국은 UTC+9입니다.
+let now = new Date(date.toLocaleString("en-US", {timeZone: "Asia/Seoul"}));
+
 console.log(now)
   // 지도 관련 클래스
   class LamcParameter {
@@ -121,8 +122,7 @@ console.log(now)
   const fetchWeather = async (url) => {
       
     // 현재 날짜 시간
-    const currentDate = date.getFullYear()+(date.getUTCMonth()+1).toString().padStart(2,'0')+date.getDate().toString();
-    console.log(currentDate);
+    
     const currentTime = (() => {
       const hours = now.getHours();
       const minutes = now.getMinutes();
@@ -130,7 +130,12 @@ console.log(now)
       const roundedHour = minutes >= 30 ? (hours + 1) % 24 : hours; // 23시 다음은 0시
       return roundedHour.toString().padStart(2, "0") + "00";
     })();
-
+    let currentDate;
+    if( now.getHours() == 23 && now.getMinutes() >= 30 ){
+      currentDate = date.getFullYear()+(date.getUTCMonth()+1).toString().padStart(2,'0')+(date.getDate()+1).toString();
+    }else{
+      currentDate = date.getFullYear()+(date.getUTCMonth()+1).toString().padStart(2,'0')+date.getDate().toString();
+    }
     // 현재 날짜 시간 키값
     const key = `${currentDate}${currentTime}`;
 
