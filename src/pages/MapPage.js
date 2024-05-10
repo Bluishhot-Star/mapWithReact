@@ -9,7 +9,7 @@ import { MdOutlineMenu, MdSearch, MdOutlineFlood, MdOutlineWbSunny, MdSevereCold
 import { RiEarthquakeLine } from "react-icons/ri";
 import { PiMapPinFill, PiPhoneCallFill, PiPersonFill } from "react-icons/pi";
 import { TbMapPinOff } from "react-icons/tb";
-import { Container as MapDiv, NaverMap, Marker, useNavermaps, GroundOverlay, InfoWindow } from 'react-naver-maps'
+import { Container as MapDiv, NaverMap, Marker, useNavermaps, GroundOverlay, InfoWindow, Polygon } from 'react-naver-maps'
 import CitySelector from '../components/CitySelector';
 import MarkerShape from '../components/MarkerShape';
 import WeatherAPI from '../components/WeatherAPI';
@@ -398,7 +398,103 @@ const MapPage = ()=>{
   },[vibration])
 
   const [deleteButtonOn, setDeleteButtonOn] = useState(false);
+  const [polyInfoList, setPolyInfoList] = useState([]);
+  const [polyList, setPolyList] = useState([]);
 
+  const getTraceData = async()=>{
+    await axios.get(`/open-api/flood-traces/search`,{
+    }).then((res)=>{
+      console.log(res);
+      if(res.status == 200){
+        enrollPolygon(res.data.body);
+      }
+    })
+  }
+
+  const enrollPolygon = async(data)=>{
+    let i = 0;
+    let tPolygons = []
+    let tPolyInfos = []
+    for await(const area of data){
+      if(area.geom){
+        let temp=[];
+        for await(const it of area.geom) {
+          temp.push(new navermaps.LatLng(it.lot, it.lat));
+        }
+        let polygon = createPolygon(area.id, temp, area.fldn_grd, area.fldn_dst_nm, area.fldn_cs_dst_nm, area.fldn_dowa, area.fldn_bgng_ymd);
+        let info = createPolygonInfoWindow(area.id, area.fldn_grd, area.fldn_dst_nm, area.fldn_cs_dst_nm, area.fldn_dowa, area.fldn_bgng_ymd);
+        tPolygons.push(polygon);
+        tPolyInfos.push(info);
+        navermaps.Event.addListener(polygon, 'click', (e) =>{
+          console.log(e);
+          map.panTo(new navermaps.Point(e.point.y, e.point.x));
+          let infoWindowTarget = tPolyInfos.filter(it=>it.id == polygon.id)[0];
+          infoWindowTarget.open(map, temp[0]);
+          setInfoWindow(infoWindowTarget);
+        });
+        navermaps.Event.addListener(polygon, 'mouseover', (e) =>{
+          polygon.setOptions({ fillColor: '#13c38b',  strokeColor:"#13c38b"})
+        });
+        navermaps.Event.addListener(polygon, 'mouseout', (e) =>{
+          polygon.setOptions({ fillColor: polygon.grade == 1 ? '#ff532c': polygon.grade == 2 ?'#ffd903' : polygon.grade == 3 ? '#82d1ca': '#efefef',strokeColor: polygon.grade == 1 ? '#ff532c': polygon.grade == 2 ?'#ffd903' : polygon.grade == 3 ? '#82d1ca': '#efefef', })
+        });
+        console.log(polygon);
+      }
+    }
+    setPolyList(tPolygons);
+        
+  }
+  const createPolygon = (id, area, grade, title, cause, deep, date)=>{
+    console.log(id, grade, title, cause, deep);
+    let polygon = new navermaps.Polygon({
+      id: id,
+      title: title,
+      cause: cause,
+      grade: grade,
+      deep: deep,
+      date: date,
+      clickable: true,
+      map: map,
+      paths: [
+          area
+      ],
+      fillColor: grade == 1 ? '#ff532c': grade == 2 ?'#ffd903' : grade == 3 ? '#82d1ca': '#efefef',
+      fillOpacity: 0.35,
+      strokeColor: grade == 1 ? '#ff532c': grade == 2 ?'#ffd903' : grade == 3 ? '#82d1ca': '#efefef',
+      strokeOpacity: 1,
+      strokeWeight: 1
+    });
+    return polygon;
+  }
+  const createPolygonInfoWindow = (id, grade, title, cause, deep, date)=>{
+    console.log(id, grade, title, cause, deep);
+    let infoWindow = new navermaps.InfoWindow({
+      content: [
+        '<div style="padding: 10px; box-shadow: rgba(0, 0, 0, 0.1) 0px 4px 16px 0px;">',
+        `   <div style="font-weight: bold; margin-bottom: 5px;">${title=="8월"?'22년 8월 대홍수':title}</div>`,
+        `   <div style="font-size: 13px;">침수날짜 : ${date}<div>`,
+        `   <div style="font-size: 13px;">침수등급 : ${grade}<div>`,
+        `   <div style="font-size: 13px;">상세 : ${cause}<div>`,
+        `   <div style="font-size: 13px;">침수수심 : ${deep}m<div>`,
+        "</div>",
+      ].join(""),
+      id: id,
+      maxWidth: 300,
+      anchorSize: {
+        width: 12,
+        height: 14,
+      },
+      borderColor: "#cecdc7",
+    });
+    return infoWindow;
+  }
+  const deleteAllPoly = ()=>{
+    polyList.forEach((el)=>{
+      el.setMap(null);
+    });
+    setPolyList([]);
+  }
+  const [polyButtonOn, setPolyButtonOn] = useState(false);
 
   return(
     <>
@@ -595,7 +691,7 @@ const MapPage = ()=>{
                 </div>
               </div>
             </div>
-            <div className="nav-button-profile">
+            <div className="nav-button-profile" onClick={()=>{if(!polyButtonOn){setPolyButtonOn(true);getTraceData()}else{setPolyButtonOn(false);deleteAllPoly();}}}>
               <IoPersonCircle/>
             </div>
           </div>
