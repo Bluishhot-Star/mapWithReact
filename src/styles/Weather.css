@@ -9,7 +9,7 @@
   width: 100%;height: 100%;
   border-radius: 10px;
   overflow: hidden;
-  background: #dadada86;
+  background: #c8f4ff;
 }
 .weather-header{
   display: flex;
@@ -135,4 +135,22 @@
 .weather-three-block-content p:last-child{
   font-size: .8rem;
   transform: translate(20%,20%);
+}
+.weather-tmpMaxMin-info .weather-tmpMax{
+  margin-right: 2px;
+}
+.weather-three-block-item.humid{
+  background: #6093e6;
+  font-weight: bold;
+  border: none;
+}
+.weather-three-block-item.rainPer{
+  background: #339fdd;
+  font-weight: bold;
+  border: none;
+}
+.weather-three-block-item.rainVol{
+  background: #60c7e6;
+  font-weight: bold;
+  border: none;
 }

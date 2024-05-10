@@ -8,6 +8,7 @@ import { GiTwinShell } from "react-icons/gi";
 import { MdOutlineMenu, MdSearch, MdOutlineFlood, MdOutlineWbSunny, MdSevereCold, MdGpsFixed, MdFindReplace, MdHouseSiding, MdArrowRight, MdArrowLeft } from "react-icons/md";
 import { RiEarthquakeLine } from "react-icons/ri";
 import { PiMapPinFill, PiPhoneCallFill, PiPersonFill } from "react-icons/pi";
+import { FaHouseFloodWater } from "react-icons/fa6";
 import { TbMapPinOff } from "react-icons/tb";
 import { Container as MapDiv, NaverMap, Marker, useNavermaps, GroundOverlay, InfoWindow, Polygon } from 'react-naver-maps'
 import CitySelector from '../components/CitySelector';
@@ -71,7 +72,7 @@ const MapPage = ()=>{
     }
     console.log(temp);
     enrollMarkers(
-      temp
+      temp, false
     );
   }
   const deleteAllMarker = ()=>{
@@ -90,7 +91,7 @@ const MapPage = ()=>{
   const [infoWindowList, setInfoWindowList] = useState([]);
 
   // 마커등록 함수
-  const enrollMarkers = async (data)=>{
+  const enrollMarkers = async (data, search)=>{
     console.log(data);
     // 임시 마커 리스트
     let tMarkers = [];
@@ -115,7 +116,7 @@ const MapPage = ()=>{
     setMarkerList([...tMarkers]);
     setInfoWindowList([...tInfos]);
     console.log(tMarkers);
-    if(tMarkers.length !== 0){
+    if(tMarkers.length !== 0 && search){
       setDeleteButtonOn(true);
       map.panTo(new navermaps.LatLng(tMarkers[0].position.y, tMarkers[0].position.x));
     }
@@ -384,7 +385,7 @@ const MapPage = ()=>{
     }
     console.log(temp);
     enrollMarkers(
-      temp
+      temp, true
     );
   }
 
@@ -398,7 +399,7 @@ const MapPage = ()=>{
   },[vibration])
 
   const [deleteButtonOn, setDeleteButtonOn] = useState(false);
-  const [polyInfoList, setPolyInfoList] = useState([]);
+  
   const [polyList, setPolyList] = useState([]);
 
   const getTraceData = async()=>{
@@ -495,7 +496,15 @@ const MapPage = ()=>{
     setPolyList([]);
   }
   const [polyButtonOn, setPolyButtonOn] = useState(false);
-
+  useEffect(()=>{
+    if(!polyButtonOn){
+      setPolyCss("off")
+    }
+    else{
+      setPolyCss("")
+    }
+  },[polyButtonOn])
+  const [polyCss, setPolyCss] = useState("off");
   return(
     <>
       
@@ -691,8 +700,11 @@ const MapPage = ()=>{
                 </div>
               </div>
             </div>
-            <div className="nav-button-profile" onClick={()=>{if(!polyButtonOn){setPolyButtonOn(true);getTraceData()}else{setPolyButtonOn(false);deleteAllPoly();}}}>
-              <IoPersonCircle/>
+            <div className="nav-flood-poly-button-container">
+              <div className={'nav-flood-poly-button ' + polyCss} onClick={()=>{if(!polyButtonOn){map.panTo(new navermaps.LatLng(37.5029934, 126.9083524)); map.setZoom(15); setPolyButtonOn(true);getTraceData()}else{setPolyButtonOn(false);deleteAllPoly();}}}>
+              <FaHouseFloodWater/>
+                <p>침수지역</p>
+              </div>
             </div>
           </div>
         </div>

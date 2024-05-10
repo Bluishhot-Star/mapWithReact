@@ -406,8 +406,8 @@ console.log(now)
               <div className="weather-tmpMaxMin-info">
                 {weatherData.tmpMaxMin ?
                 <>
-                  <p>
-                    {weatherData.tmpMaxMin.min}
+                  <p className="weather-tmpMax">
+                    {weatherData.tmpMaxMin.min} /
                   </p>
                   <p>
                     {weatherData.tmpMaxMin.max}
@@ -427,21 +427,21 @@ console.log(now)
             </div>
           </div>
           <div className="weather-three-block">
-            <div className="weather-three-block-item">
+            <div className="weather-three-block-item humid">
               <p className="weather-three-block-item-title">습도</p>
               <div className="weather-three-block-content">
                 <p>{weatherData.hum}</p>
                 <p>%</p>
               </div>
             </div>
-            <div className="weather-three-block-item">
+            <div className="weather-three-block-item rainPer">
               <p className="weather-three-block-item-title">강수확률</p>
               <div className="weather-three-block-content">
                 <p>{weatherData.rainPer}</p>
                 <p>%</p>
               </div>
             </div>
-            <div className="weather-three-block-item">
+            <div className="weather-three-block-item rainVol">
               <p className="weather-three-block-item-title">
                 {weatherData.rainType == 4 ? "산적설량":"강수량"}
               </p>

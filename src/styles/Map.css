@@ -150,6 +150,47 @@
   border: 3px solid var(--severeCold);
   margin-left: 4.5px;
 }
+
+
+.nav-flood-poly-button-container{
+  position: relative;
+  width: 100px;
+  height: 0px;
+}
+.nav-flood-poly-button{
+  position: absolute;
+  top: -15px;
+  left: 0;
+  width: 85px;
+  height: 40px;
+  background: var(--flood);
+  color: #efefef;
+  box-shadow: #0c1a51 0px 2px 10px, #5e72c0 0px -0.5px 5px;
+  border-radius: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+}
+.nav-flood-poly-button.off{
+  background: #c1c8e4;
+  box-shadow: #969696 0px 2px 3px, #a5a5a5 0px -0.5px 2px;
+  color: #333;
+}
+.nav-flood-poly-button.off svg{
+  color: #243579;
+}
+
+.nav-flood-poly-button svg{
+  color: #243579;
+}
+.nav-flood-poly-button p{
+  margin: 0;padding: 0;
+  font-size: .85rem;
+  margin-left: 3px;
+  font-weight: bold;
+  user-select: none;
+}
 .nav-delete-marker-button-container{
   position: relative;
   width: 100px;
