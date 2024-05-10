@@ -1,0 +1,138 @@
+.weather-container{
+  width: 100%;
+  height: 270px;
+  padding: 10px;
+  /* background: #000; */
+  /* background: #c9e2ffa0; */
+}
+.weather-inner{
+  width: 100%;height: 100%;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #dadada86;
+}
+.weather-header{
+  display: flex;
+  align-items: end;
+  height: 50px;
+}
+.weather-location{
+  display: flex;
+  align-items: end;
+  padding: 10px;
+}
+.weather-location svg{
+  font-size: 1.5rem;
+  margin-right: 5px;
+  color: var(--color1);
+}
+.weather-location p{
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+.weather-location p:last-child{
+  margin-left: 5px;
+}
+.weather-time{
+  padding: 10px;
+  padding-left: 0px;
+}
+.weather-time p{
+  margin: 0;
+  font-size: 1rem;
+  font-weight: bold;
+}
+.weather-content{
+  width: 100%;
+  height: 200px;
+  display: grid;
+  grid-template-rows: 60% 40%;
+}
+.weather-content>div{
+  width: 100%;
+  height: 100%;
+}
+
+.weather-main{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-evenly;
+  padding: 10px;
+}
+.weather-main p{
+  margin: 0;
+}
+.weather-main-image-container{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.weather-main-image-container svg{
+  font-size: 3.5rem;
+}
+.weather-main-image-container p{
+  margin: 0;padding: 0;
+  font-size: 2rem;
+}
+.weather-main-tmp{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 10px;
+}
+.weather-main-tmp svg{
+  transform: translateX(-20%);
+}
+.weather-main-title{
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+.weather-main-info{
+  margin-top: 5px;
+  display: flex;
+}
+.weather-tmpMaxMin-info{
+  display: flex;
+}
+.weather-wind-info{
+  display: flex;
+  margin-left: 20px;
+}
+.weather-wind-info p:first-child{
+  margin-right: 5px;
+}
+.weather-three-block{
+  display: flex;
+  align-items: center;
+  justify-content: space-evenly;
+  padding-bottom: 10px;
+}
+.weather-three-block-item{
+  height: 90%;
+  width: 80px;
+  border: 1px solid #000;
+  border-radius: 5px;
+  position: relative;
+}
+.weather-three-block-item-title{
+  font-size: .8rem;
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  margin: 0;
+}
+.weather-three-block-content{
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-40%, -35%);
+  display: flex;
+  align-items: center;
+  font-size: 1.2rem;
+}
+.weather-three-block-content p:last-child{
+  font-size: .8rem;
+  transform: translate(20%,20%);
+}

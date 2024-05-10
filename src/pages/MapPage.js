@@ -5,11 +5,14 @@ import "../styles/Map.css"
 import "../styles/Detail.css"
 import { IoPersonCircle } from "react-icons/io5";
 import { GiTwinShell } from "react-icons/gi";
-import { MdOutlineMenu, MdSearch, MdOutlineFlood, MdOutlineWbSunny, MdSevereCold, MdGpsFixed, MdFindReplace, MdOutlineClose, MdArrowRight, MdArrowLeft } from "react-icons/md";
+import { MdOutlineMenu, MdSearch, MdOutlineFlood, MdOutlineWbSunny, MdSevereCold, MdGpsFixed, MdFindReplace, MdHouseSiding, MdArrowRight, MdArrowLeft } from "react-icons/md";
 import { RiEarthquakeLine } from "react-icons/ri";
+import { PiPhoneCallFill, PiPersonFill } from "react-icons/pi";
+import { PiMapPinFill } from "react-icons/pi";
 import { Container as MapDiv, NaverMap, Marker, useNavermaps, GroundOverlay, InfoWindow } from 'react-naver-maps'
 import CitySelector from '../components/CitySelector';
 import MarkerShape from '../components/MarkerShape';
+import WeatherAPI from '../components/WeatherAPI';
 import { useSelector, useDispatch } from "react-redux"
 import {setGu, setDong, setXY} from '../store.js'
 
@@ -26,10 +29,7 @@ const MapPage = ()=>{
   const [infowindow, setInfoWindow] = useState(null);
 
   // 서울 전지역 디스플레이 좌표
-  const seoul = new navermaps.LatLngBounds(
-    new navermaps.LatLng(37.42829747263545, 126.76620435615891),
-    new navermaps.LatLng(37.7010174173061, 127.18379493229875),
-  )
+  const seoul = new navermaps.LatLng(37.5648117, 126.97501);
 
   // selector OnOff 상태 state
   const [selectorOnOff, setSelectorOnOff] = useState(false);
@@ -37,6 +37,7 @@ const MapPage = ()=>{
   // right buttons on/off
   const [floodButtonOn, setFloodButtonOn] = useState(false);
   const [earthQuakeButtonOn, setEarthQuakeButtonOn] = useState(false);
+  const [temporaryButtonOn, setTemporaryButtonOn] = useState(false);
   const [hotButtonOn, setHotButtonOn] = useState(false);
   const [coldButtonOn, setColdButtonOn] = useState(false);
 
@@ -54,13 +55,24 @@ const MapPage = ()=>{
     let center = map.getCenter();
     let lat = center.x;
     let lon = center.y;
-    await axios.get(`/open-api/shelter/search/coordinate?lat=${lat}&lon=${lon}&ditc=ALL`,{
-    }).then((res)=>{
-      console.log(res);
-      if(res.status == 200){
-        enrollMarkers(res.data.body);
-      }
-    })
+    let stack = [[floodButtonOn, "FLOOD"], [earthQuakeButtonOn,"EARTHQUAKE"], [temporaryButtonOn, "TEMPORARY_HOUSING"], [hotButtonOn,"HOT"], [coldButtonOn,"COLD"]];
+    let temp = [];
+    for await(const it of stack) {
+      if(!it[0]) continue;
+      await axios.get(`/open-api/integrated/search/coordinate?lat=${lat}&lon=${lon}&ditc=${it[1]}&lonRange=${markerRange.lon}&latRange=${markerRange.lat}`,{
+      }).then((res)=>{
+        console.log(res);
+        if(res.status == 200){
+          temp = [...temp, ...res.data.body.temporary_housing_facility_data,
+            ...res.data.body.shelter_data,
+            ...res.data.body.resting_place_data];
+        }
+      })
+    }
+    console.log(temp);
+    enrollMarkers(
+      temp
+    );
   }
   const deleteAllMarker = ()=>{
     console.log(markerList);
@@ -88,9 +100,9 @@ const MapPage = ()=>{
     for await (const it of data) {
       console.log(it);
       // 마커 생성
-      let marker = createMarker(it.id, it.name, it.lon, it.lat, it.ditc, it.dtl_adres);
+      let marker = createMarker(it.id, it.name, it.lon, it.lat, it.ditc, it.dtl_adres, it.mngps_nm, it.qty_crty, it.use_prnb, it.dtl_ades);
       // 정보창 생성
-      let infoWindow = createInfoWindow(it.id, it.name,it.ditc);
+      let infoWindow = createInfoWindow(it.id, it.name, it.ditc);
       // 이벤트 등록
       navermaps.Event.addListener(marker, 'click', (e) =>{
         markerClickHandler(e, it.id, [...tMarkers,marker], [...tInfos,infoWindow]);
@@ -102,17 +114,26 @@ const MapPage = ()=>{
     // state 저장
     setMarkerList([...tMarkers]);
     setInfoWindowList([...tInfos]);
+    console.log(tMarkers);
+    if(tMarkers.length !== 0){
+      map.panTo(new navermaps.LatLng(tMarkers[0].position.y, tMarkers[0].position.x));
+      map.setZoom(14);
+    }
   }
 
   // marker 생성
-  const createMarker= (id, name, longitude, latitude, type, address)=>{
+  const createMarker= (id, name, longitude, latitude, type, address, number, volume1, volume2, address2)=>{
     let newMarker = new navermaps.Marker({
       position: new navermaps.LatLng(longitude, latitude),
       id: id,
       map: map,
       title: name,
+      number: number,
+      volume1: volume1,
+      volume2: parseInt(volume2),
       type: type.toLowerCase(),
       address : address,
+      address2 : address2,
       clickable: true,
       icon: {
          //html element를 반환하는 CustomMapMarker 컴포넌트 할당
@@ -131,7 +152,7 @@ const MapPage = ()=>{
       content: [
         '<div style="padding: 10px; box-shadow: rgba(0, 0, 0, 0.1) 0px 4px 16px 0px;">',
         `   <div style="font-weight: bold; margin-bottom: 5px;">${name}</div>`,
-        `   <div style="font-size: 13px;">${type=="FLOOD"?"수해 대피소":type=="EARTHQUAKE"?"지진 대피소":type=="HOT"?"무더위 쉼터":type=="COLD"?"한파 쉼터":"-"}<div>`,
+        `   <div style="font-size: 13px;">${type=="FLOOD"?"수해 대피소":type=="EARTHQUAKE"?"지진 대피소":type=="TEMPORARY_HOUSING"?"이재민 대피소":type=="HOT"?"무더위 쉼터":type=="COLD"?"한파 쉼터":"-"}<div>`,
         "</div>",
       ].join(""),
       id: id,
@@ -197,6 +218,11 @@ const MapPage = ()=>{
                     <RiEarthquakeLine className='earthquake-icon'/>
                     <p>지진 대피소</p>
                   </>
+                :props.type=="TEMPORARY_HOUSING"?
+                  <>
+                    <MdHouseSiding className='temporary-icon'/>
+                    <p>이재민 대피소</p>
+                  </>
                 :props.type=="HOT"?
                   <>
                     <MdOutlineWbSunny className='swelter-icon'/>
@@ -204,16 +230,49 @@ const MapPage = ()=>{
                   </>
                 :props.type=="COLD"?
                   <>
-                    <MdSevereCold className='severeCold-icon'/>:"-"
+                    <MdSevereCold className='severeCold-icon'/>
                     <p>한파 쉼터</p>
                   </>
                 : <><p>-</p></>
               }
             </div>
           </div>
-          <div className={'detail-content '}>
-            {props.address}
-          </div>
+          {
+            props.type=="TEMPORARY_HOUSING"?
+              <div className='detail-content-temporary'>
+                <div className='detail-address'>
+                  <PiMapPinFill className='detail-address-icon'/>
+                  <p>{props.address}</p>
+                </div>
+                <div className='detail-number'>
+                  <PiPhoneCallFill className='detail-number-icon'/>
+                  <p>{props.number?props.number:'-'}</p>
+                </div>
+                <div className='detail-volume'>
+                  <PiPersonFill className='detail-volume-icon'/>
+                  <p>{props.volume1}명 수용</p>
+                </div>
+              </div>
+            :
+              props.type=="HOT"||props.type=="COLD"?
+                <div className='detail-content-temporary'>
+                  <div className='detail-address'>
+                    <PiMapPinFill className='detail-address-icon'/>
+                    <p>{props.address2}</p>
+                  </div>
+                  <div className='detail-volume'>
+                    <PiPersonFill className='detail-volume-icon'/>
+                    <p>{props.volume2}명 수용</p>
+                  </div>
+                </div>
+              :
+              <div className={'detail-content '}>
+                <div className='detail-address'>
+                    <PiMapPinFill className='detail-address-icon'/>
+                    <p>{props.address}</p>
+                  </div>
+              </div>
+          }
         </div>
       </>
     );
@@ -234,6 +293,10 @@ const MapPage = ()=>{
   // 리셋버튼 디스플레이
   const [resetBtnOnOff, setResetBtnOnOff] = useState(false);
 
+  useEffect(()=>{
+    //'longitude':37.5648117,"latitude":126.9750053
+    changeCenter({y:37.5648117,x:126.9750053})
+  },[])
 
   // 중심 위치 변경 이벤트 핸들러
   const changeCenter = (e)=>{
@@ -249,6 +312,7 @@ const MapPage = ()=>{
           let res = response.v2, // 검색 결과의 컨테이너
               address = res.address; // 검색 결과로 만든 주소
           console.log(e.y, e.x);
+          setCenterXY({"lat":parseInt(e.y),"lon":parseInt(e.x)});
           console.log(address.jibunAddress.trim().split(' '));
           let result = address.jibunAddress.trim().split(' '); // 지도 중앙의 주소 배열 (시 / 구 / 동)
           // point.Gu, point.Dong 변화
@@ -258,10 +322,80 @@ const MapPage = ()=>{
       });
     }
   }
+  // 마커 범위 state
+  const [markerRange, setMarkerRange] = useState({lat:0.015, lon:0.015})
+  // 마커 범위 설정 함수
+  const rangeSetting = (e)=>{
+    let lat = (e._max.x - e._min.x)/2;
+    let lon = (e._max.y - e._min.y)/2;
+    console.log(lat, lon);
+    setMarkerRange({"lat":lat, "lon":lon});
+  }
+
+  const [centerXY, setCenterXY] = useState({"lat":"","lon":""})
 
 
+  const [shelterDrop, setShelterDrop] = useState(false)
+  const [temporaryDrop, setTemporaryDrop] = useState(false)
+  const [houseDrop, setHouseDrop] = useState(false)
+
+  useEffect(()=>{
+    if(!shelterDrop){
+      setFloodButtonOn(false);
+      setEarthQuakeButtonOn(false);
+    }
+  },[shelterDrop])
   
+  useEffect(()=>{
+    if(!temporaryDrop){
+      setTemporaryButtonOn(false);
+    }
+  },[temporaryDrop])
 
+  useEffect(()=>{
+    if(!houseDrop){
+      setHotButtonOn(false);
+      setColdButtonOn(false);
+    }
+  },[houseDrop])
+  useEffect(()=>{
+    if(floodButtonOn||earthQuakeButtonOn||temporaryButtonOn||hotButtonOn||coldButtonOn)setResetBtnOnOff(true);
+  },[floodButtonOn,earthQuakeButtonOn,temporaryButtonOn,hotButtonOn,coldButtonOn])
+
+  const searchInputRef = useRef(null);
+  const submitSearch= async(e)=>{
+    await deleteAllMarker();
+    e.preventDefault();
+    console.log(searchInputRef.current.value);
+    if(!(floodButtonOn||earthQuakeButtonOn||temporaryButtonOn||hotButtonOn||coldButtonOn))setVibration("vibration");
+    let stack = [[floodButtonOn, "FLOOD"], [earthQuakeButtonOn,"EARTHQUAKE"], [temporaryButtonOn, "TEMPORARY_HOUSING"], [hotButtonOn,"HOT"], [coldButtonOn,"COLD"]];
+    let temp = [];
+    for await(const it of stack) {
+      if(!it[0]) continue;
+      await axios.get(`/open-api/integrated/search?ditc=${it[1]}&search=${searchInputRef.current.value}`,{
+      }).then((res)=>{
+        console.log(res);
+        if(res.status == 200){
+          temp = [...temp, ...res.data.body.temporary_housing_facility_data,
+            ...res.data.body.shelter_data,
+            ...res.data.body.resting_place_data];
+        }
+      })
+    }
+    console.log(temp);
+    enrollMarkers(
+      temp
+    );
+  }
+
+  const [vibration, setVibration] = useState("");
+  useEffect(()=>{
+    if(vibration !== ""){
+      setTimeout(() => {
+        setVibration("");
+      }, 300);
+    }
+  },[vibration])
   return(
     <>
       
@@ -270,7 +404,7 @@ const MapPage = ()=>{
         {
           detailOnOff ?
           <div className="detail-open-button-container" onClick={()=>{if(detailOnOff==="off"){setDetailOnOff("on")}}}>
-            <MdArrowRight/>
+            <MdArrowRight point={point}/>
           </div>
           :null
         }
@@ -280,13 +414,14 @@ const MapPage = ()=>{
           </div>
           <div className="detail-header">
           </div>
+          <WeatherAPI XY={centerXY} point={point}/>
           <div className='detail-body'>
           {
             markerList.length !== 0 ?
               markerList.map((el, idx)=>{
                 return (
                   <div ref={(el) => (scrollRef.current[idx] = el)} >
-                    <DetailContent idx={idx} type={el.type.toUpperCase()} name={el.title} lon={el.position.y} lat={el.position.x} address={el.address} id={el.id}/>
+                    <DetailContent idx={idx} type={el.type.toUpperCase()} name={el.title} lon={el.position.y} lat={el.position.x} address={el.address} number={el.number} volume1={el.volume1} volume2={el.volume2} address2={el.address2} id={el.id}/>
                   </div>
               )
               })
@@ -298,25 +433,24 @@ const MapPage = ()=>{
         {
               resetBtnOnOff ?
               <div className='reset-button-container'>
-                <div className="reset-button" 
+                <div className={"reset-button " + vibration} 
                 onClick={()=>{
+                  if(!floodButtonOn&&!earthQuakeButtonOn&&!temporaryButtonOn&&!hotButtonOn&&!coldButtonOn){ setVibration("vibration"); return;}
                   setResetBtnOnOff(false);
                   deleteAllMarker();
                   getData();
                   setDetailOnOff("on");
                 }
                   }>
-                  <p>이 지역의</p>
                   {
-                    !floodButtonOn&&!earthQuakeButtonOn&&!hotButtonOn&&!coldButtonOn ?
+                    !floodButtonOn&&!earthQuakeButtonOn&&!temporaryButtonOn&&!hotButtonOn&&!coldButtonOn ?
                     <>
-                      <MdOutlineFlood className='flood-icon'/>
-                      <RiEarthquakeLine className='earthquake-icon'/>
-                      <MdOutlineWbSunny className='swelter-icon'/>
-                      <MdSevereCold className='severeCold-icon'/>
+                      <MdFindReplace className='find-marker-icon'/>
+                      <p>우측 상단의 <u>검색 항목</u>을 선택해주세요!</p>
                     </>
                     :
                     <>
+                      <p>이 지역의</p>
                       {
                         floodButtonOn?<MdOutlineFlood className='flood-icon'/>:null
                       }
@@ -324,14 +458,17 @@ const MapPage = ()=>{
                         earthQuakeButtonOn?<RiEarthquakeLine className='earthquake-icon'/>:null
                       }
                       {
+                        temporaryButtonOn?<MdHouseSiding className='temporary-icon'/>:null
+                      }
+                      {
                         hotButtonOn?<MdOutlineWbSunny className='swelter-icon'/>:null
                       }
                       {
                         coldButtonOn?<MdSevereCold className='severeCold-icon'/>:null
                       }
+                      <p>검색하기</p>
                     </>
                   }
-                  <p>검색하기</p>
                   {/* <MdFindReplace className='find-marker-icon'/> */}
                 </div>
               </div>
@@ -353,15 +490,17 @@ const MapPage = ()=>{
                 <p>천재지변</p>
               </div>
               <div className="nav-input-container">
-                <input type="text" placeholder='주소, 대피소, 쉼터를 검색하세요' onClick={(e)=>{e.stopPropagation();}}/>
-                <MdSearch className='search-icon'/>
+                <form onSubmit={(e)=>{submitSearch(e)}}>
+                  <input ref={searchInputRef} type="text" placeholder='주소, 대피소, 쉼터를 검색하세요' onClick={(e)=>{e.stopPropagation(); }}/>
+                  <button><MdSearch className='search-icon'/></button>
+                </form>
               </div>
             </div>
 
           </div>
           <CitySelector onOff={selectorOnOff} setOnOff={setSelectorOnOff}/>
           <div className="nav-right-container">
-            <div className={floodButtonOn?"on nav-button-text " :"nav-button-text"} onClick={()=>{setFloodButtonOn(!floodButtonOn)}}>
+            {/* <div className={floodButtonOn?"on nav-button-text " :"nav-button-text"} onClick={()=>{setFloodButtonOn(!floodButtonOn)}}>
               <MdOutlineFlood className='flood-icon'/>
               <p>수해 대피소</p>
             </div>
@@ -376,6 +515,53 @@ const MapPage = ()=>{
             <div className={coldButtonOn?"on nav-button-text " :"nav-button-text"} onClick={()=>{setColdButtonOn(!coldButtonOn)}}>
               <MdSevereCold className='severeCold-icon'/>
               <p>한파 쉼터</p>
+            </div> */}
+            
+            <div className="nav-category-button-container shelter">
+              <div className="nav-category-toggle-button" onClick={(e)=>{e.stopPropagation(); setShelterDrop(!shelterDrop); setTemporaryDrop(false); setHouseDrop(false); console.log("asdfsadf");}}>
+                대피소
+              </div>
+              <div className={shelterDrop == true ? "nav-category-button first-drop":"nav-category-button"}>
+                <div className={floodButtonOn?"on nav-button-text flood" :"nav-button-text"} onClick={()=>{setFloodButtonOn(!floodButtonOn)}}>
+                  <MdOutlineFlood className='flood-icon'/>
+                  <p>수해 대피소</p>
+                </div>
+              </div>
+              <div className={shelterDrop == true ? "nav-category-button second-drop":"nav-category-button"}>
+                <div className={earthQuakeButtonOn?"on nav-button-text earthquake" :"nav-button-text"} onClick={()=>{setEarthQuakeButtonOn(!earthQuakeButtonOn)}}>
+                  <RiEarthquakeLine className='earthquake-icon'/>
+                  <p>지진 대피소</p>
+                </div>
+              </div>
+              
+            </div>
+            <div className="nav-category-button-container house">
+              <div className="nav-category-toggle-button" onClick={(e)=>{e.stopPropagation(); setTemporaryDrop(!temporaryDrop); setShelterDrop(false); setHouseDrop(false); console.log("asdfsadf");}}>
+                이재민
+              </div>
+              <div className={temporaryDrop == true ? "nav-category-button first-drop":"nav-category-button"}>
+                <div className={temporaryButtonOn?"on nav-button-text temporary" :"nav-button-text"} onClick={()=>{setTemporaryButtonOn(!temporaryButtonOn)}}>
+                  <MdHouseSiding className='temporary-icon'/>
+                  <p>이재민 대피소</p>
+                </div>
+              </div>
+            </div>
+            <div className="nav-category-button-container house">
+              <div className="nav-category-toggle-button" onClick={(e)=>{e.stopPropagation(); setHouseDrop(!houseDrop); setShelterDrop(false); setTemporaryDrop(false); console.log("asdfsadf");}}>
+                쉼터
+              </div>
+              <div className={houseDrop == true ? "nav-category-button first-drop":"nav-category-button"}>
+                <div className={hotButtonOn?"on nav-button-text hot" :"nav-button-text"} onClick={()=>{setHotButtonOn(!hotButtonOn)}}>
+                  <MdOutlineWbSunny className='swelter-icon'/>
+                  <p>무더위 쉼터</p>
+                </div>
+              </div>
+              <div className={houseDrop == true ? "nav-category-button second-drop":"nav-category-button"}>
+                <div className={coldButtonOn?"on nav-button-text cold" :"nav-button-text"} onClick={()=>{setColdButtonOn(!coldButtonOn)}}>
+                  <MdSevereCold className='severeCold-icon'/>
+                  <p>한파 쉼터</p>
+                </div>
+              </div>
             </div>
             <div className="nav-button-profile">
               <IoPersonCircle/>
@@ -387,13 +573,11 @@ const MapPage = ()=>{
           <div className="right-map-button" onClick={(e) => {
             e.preventDefault()
             if (map) {
-              map.panToBounds(seoul)
+              map.panTo(seoul);
+              map.setZoom(12);
             }
           }}>
             <p>서울</p>
-          </div>
-          <div className="right-map-button">
-            <MdGpsFixed/>
           </div>
         </div>
         <MapDiv className='map'>
@@ -403,12 +587,13 @@ const MapPage = ()=>{
               if(selectorOnOff){setSelectorOnOff(false)}
               if(infowindow){infowindow.close()}
             }}
-            defaultCenter={new navermaps.LatLng(37.5648117, 126.9750053)}
-            defaultZoom={11}
+            defaultCenter={new navermaps.LatLng(37.5648117, 126.97501)}
+            defaultZoom={12}
             disableKineticPan={false}
             scaleControl={true}
             zoomControl={true}
             onCenterChanged={(e)=>{changeCenter(e)}}
+            onBoundsChanged={(e)=>{rangeSetting(e)}}
             minZoom={7}
             maxZoom={21}
             zoomControlOptions={{
