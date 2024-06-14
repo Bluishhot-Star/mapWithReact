@@ -542,7 +542,7 @@ const MapPage = ()=>{
               </div>
             </div>
           </div>
-          <WeatherAPI XY={centerXY} point={point}/>
+          {/* <WeatherAPI XY={centerXY} point={point}/> */}
           <div className='detail-body'>
           {
             markerList.length !== 0 ?
